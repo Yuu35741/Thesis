@@ -5,6 +5,8 @@ npm install express
 npm install socket.io
 npm install p5
 npm install @react-native-commnunity/cli
+npm install body-parser --save
+
 ```
 # Use
 ```bash
