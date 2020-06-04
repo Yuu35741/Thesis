@@ -1,4 +1,100 @@
+<script src="libraries/socket.io.js"></script>
 <script src="libraries/p5.min.js"></script>
 <script src="libraries/p5.sound.min.js"></script>
 <script src="sketch.js"></script>
-<script src="libraries/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+    var username = "null";
+    var host = "null";
+    var id = "null";
+
+    $(document).ready(function () {
+        if (username == "null") $("#user").hide();
+        $("#ingame").hide();
+    });
+
+    function sendName() {
+        username = $("#username").val();
+        $("#name").html("Current user: "+username)
+        console.log(username);
+        $("#username").hide()
+        $("#sendName").hide()
+        $("#user").show();
+    }
+
+    function CreateRoom() {
+        if (username != null) {
+            var data = { "username": username };
+            $.post("/create", data, function (res) {
+                host = username;
+                var roominfo = JSON.parse(res);
+                UpdatePlayers(roominfo.players);
+                $("#host").html("Currently in room hosted by: " + host);
+                $("#multi").hide()
+                $("#ingame").show();
+            });
+        }
+    }
+    function FindRoom() {
+        $.get("/rooms", function (data) {
+            if (data.rooms.length == 1) {
+                $("#roommenu").html("<p>No open room</p>");
+            }
+            else {
+                $("#roommenu").html("");
+                for (i = 1; i < data.rooms.length; i++) {
+                    $("#roommenu").append('<li style="cursor:pointer">' + data.rooms[i].host + '</li>');
+                };
+                $("#roommenu").on("click", "li", function (event) {
+                    var data = { username: username, host: $(this).html() };
+                    console.log(data);
+                    $.post("/join", data, function (res) {
+                        var roominfo = JSON.parse(res);
+                        UpdatePlayers(roominfo.players);
+                        $("#host").html("Currently in room hosted by: " + roominfo.host);
+                        $("#multi").hide()
+                        $("#ingame").show();
+                    });
+                });
+            };
+        });
+    }
+
+    function LeaveRoom() {
+        data = { "username": username, "host": host };
+        $.post("/leave", data, function (res) {
+             $("#host").html("");
+             $("#multi").show()
+             $("#ingame").hide();
+        });
+    }
+
+    function UpdatePlayers(playerarr) {
+        $("#players").html("");
+        for (i = 0; i < playerarr.length; i++) {
+            $("#players").append('<li style="display:inline-block;margin-right:10px;">' + playerarr[i] + '</li>');
+        };
+    }
+</script>
+
+<div id="roomwrapper" style="width:500px;height:700px;border:2px solid black;">
+    <input id="username" style="display:block" placeholder="Input your name here" />
+    <button id="sendName" onclick="sendName()">Send</button>
+    <div id="user">
+        <p id="name"></p>
+        <p id="host"></p>
+        <div id="multi">
+            <button id="createbut" type="button" onclick="CreateRoom()">Create new room</button>
+            <button id="findbut" type="button" onclick="FindRoom()">Find room</button>
+            <div id="findroom" style="display:block; border:2px solid black;">
+                <ul id="roommenu"></ul>
+            </div>
+        </div>
+        <div id="ingame">
+            <div id="canvasdiv"></div>
+            <ul id="players"></ul>
+            <button id="leavebut" type="button" onclick="LeaveRoom()">LeaveRoom</button>
+        </div>
+    </div>
+</div>
